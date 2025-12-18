@@ -4,17 +4,41 @@ layout: layouts/base.njk
 {# Only include the syntax highlighter CSS on blog posts, included with the CSS per-page bundle #}
 <style>{% include "node_modules/prismjs/themes/prism-okaidia.css" %}</style>
 <style>{% include "css/prism-diff.css" %}</style>
-<h1>{{ title }}</h1>
+{%- set categoryLabel = category or (tags | filterTagList | first) -%}
 
-<ul class="post-metadata">
-	<li><time datetime="{{ page.date | htmlDateString }}">{{ page.date | readableDate }}</time></li>
-	{%- for tag in tags | filterTagList %}
-	{%- set tagUrl %}/tags/{{ tag | slugify }}/{% endset %}
-	<li><a href="{{ tagUrl }}" class="post-tag">{{ tag }}</a>{%- if not loop.last %}, {% endif %}</li>
-	{%- endfor %}
-</ul>
+<div class="post-layout">
+	<article class="post-article">
+		<section class="mobile-toc" aria-label="Inhaltsübersicht">
+			<details class="toc" id="toc">
+				<summary class="toc-summary">
+					<span class="toc-marker" aria-hidden="true"></span>
+					<span class="toc-label">Inhaltsübersicht</span>
+				</summary>
+				<nav class="toc-body" aria-label="Inhaltsübersicht Links">
+					<ol class="toc-list" id="toc-list"></ol>
+				</nav>
+			</details>
+		</section>
 
-{{ content | safe }}
+		<header class="post-hero">
+			{%- if categoryLabel -%}
+			<p class="post-kicker">{{ categoryLabel }}</p>
+			{%- endif -%}
+
+			<h1 class="post-title">{{ title }}</h1>
+
+			<ul class="post-metadata">
+				<li><time datetime="{{ page.date | htmlDateString }}">{{ page.date | readableDate }}</time></li>
+				{%- for tag in tags | filterTagList %}
+				{%- set tagUrl %}/tags/{{ tag | slugify }}/{% endset %}
+				<li><a href="{{ tagUrl }}" class="tag-pill">{{ tag }}</a></li>
+				{%- endfor %}
+			</ul>
+		</header>
+
+		<div class="post-content">
+			{{ content | safe }}
+		</div>
 
 {%- if collections.posts %}
 {%- set previousPost = collections.posts | getPreviousCollectionItem %}
@@ -26,3 +50,102 @@ layout: layouts/base.njk
 </ul>
 {%- endif %}
 {%- endif %}
+
+	</article>
+
+	<aside class="post-sidebar" aria-label="Sidebar">
+		<div class="sidebar-block">
+			<h2 class="sidebar-title">
+				<a class="sidebar-link" id="sidebar-h2-link" href="#">Überschrift 1</a>
+			</h2>
+			<p class="sidebar-subtitle">
+				<a class="sidebar-link sidebar-sublink" id="sidebar-h3-link" href="#">Überschrift 2</a>
+			</p>
+		</div>
+
+		<div class="sidebar-block author-card">
+			<p class="author-name">{{ metadata.author.name }}</p>
+			{%- if metadata.author.title -%}
+			<p class="author-title">{{ metadata.author.title }}</p>
+			{%- endif -%}
+			{%- if metadata.author.roles and metadata.author.roles.length -%}
+			<ul class="author-roles">
+				{%- for role in metadata.author.roles -%}
+				<li>{{ role }}</li>
+				{%- endfor -%}
+			</ul>
+			{%- endif -%}
+			{%- if metadata.author.phone -%}
+			<p class="author-phone">{{ metadata.author.phone }}</p>
+			{%- endif -%}
+
+			{%- if metadata.author.imageUrl -%}
+			<img class="author-image" src="{{ metadata.author.imageUrl }}" alt="" loading="lazy" decoding="async">
+			{%- else -%}
+			<div class="author-image-placeholder" aria-hidden="true"></div>
+			{%- endif -%}
+		</div>
+	</aside>
+</div>
+
+<script>
+	(() => {
+		const tocList = document.getElementById("toc-list");
+		const content = document.querySelector(".post-content");
+		if (!tocList || !content) return;
+
+		const headings = Array.from(content.querySelectorAll("h2, h3"));
+		if (!headings.length) {
+			const toc = document.getElementById("toc");
+			if (toc) toc.style.display = "none";
+			return;
+		}
+
+		for (const h of headings) {
+			if (!h.id) continue;
+			const li = document.createElement("li");
+			li.className = `toc-item toc-${h.tagName.toLowerCase()}`;
+			const a = document.createElement("a");
+			a.href = `#${h.id}`;
+			a.textContent = h.textContent || "";
+			li.appendChild(a);
+			tocList.appendChild(li);
+		}
+
+		const params = new URLSearchParams(window.location.search);
+		const shouldOpen = params.get("toc") === "open" || window.location.hash === "#toc";
+		if (shouldOpen) {
+			const toc = document.getElementById("toc");
+			if (toc) toc.open = true;
+		}
+
+		// Desktop sidebar mapping: Überschrift 1/2 -> first h2/h3 in content
+		const sidebarH2 = document.getElementById("sidebar-h2-link");
+		const sidebarH3 = document.getElementById("sidebar-h3-link");
+		if (sidebarH2) {
+			const firstH2 = headings.find(h => h.tagName.toLowerCase() === "h2");
+			if (firstH2) {
+				sidebarH2.textContent = firstH2.textContent || "";
+				sidebarH2.href = `#${firstH2.id}`;
+			} else {
+				sidebarH2.closest(".sidebar-title")?.style.setProperty("display", "none");
+			}
+		}
+		if (sidebarH3) {
+			const firstH3 = headings.find(h => h.tagName.toLowerCase() === "h3");
+			if (firstH3) {
+				sidebarH3.textContent = firstH3.textContent || "";
+				sidebarH3.href = `#${firstH3.id}`;
+			} else {
+				// fallback: second h2 if available
+				const h2s = headings.filter(h => h.tagName.toLowerCase() === "h2");
+				if (h2s.length > 1) {
+					sidebarH3.textContent = h2s[1].textContent || "";
+					sidebarH3.href = `#${h2s[1].id}`;
+				} else {
+					sidebarH3.closest(".sidebar-subtitle")?.style.setProperty("display", "none");
+				}
+			}
+		}
+	})();
+</script>

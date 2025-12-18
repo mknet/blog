@@ -7,6 +7,11 @@
 		<meta name="description" content="{{ description or metadata.description }}">
 		<link rel="alternate" href="/feed/feed.xml" type="application/atom+xml" title="{{ metadata.title }}">
 
+		{# Fonts #}
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Asap:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 		{#- Uncomment this if you’d like folks to know that you used Eleventy to build your site!  #}
 		{#- <meta name="generator" content="{{ eleventy.generator }}"> #}
 
@@ -42,33 +47,75 @@
 	<body>
 		<a href="#main" id="skip-link" class="visually-hidden">Skip to main content</a>
 
-		<header>
-			<a href="/" class="home-link">{{ metadata.title }}</a>
+		<header class="site-header">
+			<div class="site-topbar">
+				<div class="site-topbar-inner">
+					<a href="/" class="brand" aria-label="{{ metadata.title }}">
+						{%- if metadata.brand and metadata.brand.logoUrl -%}
+						<img class="brand-logo" src="{{ metadata.brand.logoUrl }}" alt="" decoding="async">
+						{%- else -%}
+						<span class="brand-mark" aria-hidden="true">mk</span>
+						{%- endif -%}
+						<span class="brand-name">{{ metadata.title }}</span>
+					</a>
 
-			{#- Read more about `eleventy-navigation` at https://www.11ty.dev/docs/plugins/navigation/ #}
-			<nav>
-				<h2 class="visually-hidden">Top level navigation menu</h2>
-				<ul class="nav">
-				{%- for entry in collections.all | eleventyNavigation %}
-					<li class="nav-item"><a href="{{ entry.url }}"{% if entry.url == page.url %} aria-current="page"{% endif %}>{{ entry.title }}</a></li>
-				{%- endfor %}
-				</ul>
-			</nav>
+					<p class="brand-tagline">{{ metadata.brand.tagline or metadata.description }}</p>
+
+					<div class="mobile-actions" aria-label="Mobile actions">
+						{%- if metadata.author and metadata.author.phone -%}
+						<a class="icon-btn icon-btn-phone" href="tel:{{ metadata.author.phone | replace(' ', '') }}" aria-label="Anrufen">
+							<span aria-hidden="true">✆</span>
+						</a>
+						{%- endif -%}
+						<button class="icon-btn icon-btn-menu" type="button" data-nav-toggle aria-label="Menü öffnen">
+							<span class="kebab" aria-hidden="true"></span>
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="site-nav-wrap">
+				<div class="container">
+					{#- Read more about `eleventy-navigation` at https://www.11ty.dev/docs/plugins/navigation/ #}
+					<nav>
+						<h2 class="visually-hidden">Top level navigation menu</h2>
+						<ul class="nav">
+						{%- for entry in collections.all | eleventyNavigation %}
+							<li class="nav-item"><a href="{{ entry.url }}"{% if entry.url == page.url %} aria-current="page"{% endif %}>{{ entry.title }}</a></li>
+						{%- endfor %}
+						</ul>
+					</nav>
+				</div>
+			</div>
 		</header>
 
-		<main id="main">
-			<heading-anchors>
-				{{ content | safe }}
-			</heading-anchors>
+		<main id="main" class="site-main">
+			<div class="container">
+				<heading-anchors>
+					{{ content | safe }}
+				</heading-anchors>
+			</div>
 		</main>
 
-		<footer>
-			<p>
-				<em>Built with <a href="https://www.11ty.dev/">{{ eleventy.generator }}</a></em>
-			</p>
+		<footer class="site-footer">
+			<div class="container">
+				<p class="footer-note">
+					<em>Built with <a href="https://www.11ty.dev/">{{ eleventy.generator }}</a></em>
+				</p>
+			</div>
 		</footer>
 
 		<!-- This page `{{ page.url }}` was built on {% currentBuildDate %} -->
 		<script type="module" src="{% getBundleFileUrl "js" %}"></script>
+		<script>
+			(() => {
+				const btn = document.querySelector("[data-nav-toggle]");
+				if (!btn) return;
+				btn.addEventListener("click", () => {
+					const isOpen = document.body.toggleAttribute("data-nav-open");
+					btn.setAttribute("aria-label", isOpen ? "Menü schließen" : "Menü öffnen");
+				});
+			})();
+		</script>
 	</body>
 </html>
