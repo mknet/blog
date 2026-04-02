@@ -4,7 +4,13 @@ const eleventyNavigation = {
 	order: 2
 };
 ---
-<h1>Archive</h1>
+<header class="post-hero">
+	<p class="post-kicker">Blog</p>
+	<h1 class="post-title">Archiv</h1>
+	<p class="home-lead">Alle Beiträge chronologisch.</p>
+</header>
 
-{% set postslist = collections.posts %}
-{% include "postslist.njk" %}
+<div class="post-content">
+	{% set postslist = collections.posts %}
+	{% include "postslist.njk" %}
+</div>

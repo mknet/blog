@@ -1,16 +1,33 @@
 ---
 layout: layouts/base.njk
 ---
-<!-- Delete this block, which will also remove the component CSS from the bundle -->
-<style>{% include "css/message-box.css" %}</style>
-<div class="message-box">
-	<ol>
-		<li>Edit <code>_data/metadata.js</code> with your blog’s information.</li>
-		<li>(Optional) Edit <code>eleventy.config.js</code> with your <a href="https://www.11ty.dev/docs/config/">configuration preferences</a>.</li>
-		<li>Delete this message from <code>_includes/layouts/home.njk</code>.</li>
-	</ol>
-	<p><em>This is an <a href="https://www.11ty.dev/">Eleventy project</a> created from the <a href="https://github.com/11ty/eleventy-base-blog"><code>eleventy-base-blog</code> repo</a>.</em></p>
-</div>
-<!-- Stop deleting -->
+<div class="post-layout">
+	<article class="post-article">
+		{{ content | safe }}
+	</article>
 
-{{ content | safe }}
+	<aside class="post-sidebar" aria-label="Profil">
+		<div class="sidebar-block author-card">
+			<p class="author-name">{{ metadata.author.name }}</p>
+			{%- if metadata.author.title -%}
+			<p class="author-title">{{ metadata.author.title }}</p>
+			{%- endif -%}
+			{%- if metadata.author.roles and metadata.author.roles.length -%}
+			<ul class="author-roles">
+				{%- for role in metadata.author.roles -%}
+				<li>{{ role }}</li>
+				{%- endfor -%}
+			</ul>
+			{%- endif -%}
+			{%- if metadata.author.phone -%}
+			<p class="author-phone">{{ metadata.author.phone }}</p>
+			{%- endif -%}
+
+			{%- if metadata.author.imageUrl -%}
+			<img class="author-image" src="{{ metadata.author.imageUrl | url }}" alt="" width="874" height="823" loading="lazy" decoding="async" eleventy:ignore>
+			{%- else -%}
+			<div class="author-image-placeholder" aria-hidden="true"></div>
+			{%- endif -%}
+		</div>
+	</aside>
+</div>

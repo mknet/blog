@@ -1,13 +1,13 @@
 export default {
 	title: "Marcel Koch",
-	url: "https://example.com/",
+	url: "https://marcelkoch.net/",
 	language: "de",
 	description: "Software, Menschen, Lösungen",
 	brand: {
 		/** Shown in the purple top bar */
 		tagline: "Software, Menschen, Lösungen",
-		/** Optional: add a logo file later (e.g. /img/logo.svg) */
-		logoUrl: null
+		/** Wortmarke wie auf https://www.marcelkoch.net (SVG, public/img) */
+		logoUrl: "/img/marcelkoch-logo.svg"
 	},
 	author: {
 		name: "Marcel Koch",
@@ -16,6 +16,7 @@ export default {
 		title: "freiberuflicher",
 		roles: ["IT-Berater", "Softwareentwickler", "Kommunikationscoach"],
 		phone: "+49 6172 807 61 63",
-		imageUrl: null
+		/** Portrait (PNG, public/img) */
+		imageUrl: "/img/marcel-koch.png"
 	}
 }

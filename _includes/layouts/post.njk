@@ -4,10 +4,15 @@ layout: layouts/base.njk
 {# Only include the syntax highlighter CSS on blog posts, included with the CSS per-page bundle #}
 <style>{% include "node_modules/prismjs/themes/prism-okaidia.css" %}</style>
 <style>{% include "css/prism-diff.css" %}</style>
-{%- set categoryLabel = category or (tags | filterTagList | first) -%}
+{%- set postTags = tags | filterTagList -%}
+{%- set categoryLabel = category or (postTags | first) -%}
+{%- set tocItems = content | tocFromContent -%}
+{# Voller Seitenpfad + Fragment: funktioniert mit pathPrefix / HtmlBase und bricht nicht auf # allein #}
+{%- set tocPageUrl = page.url | url -%}
 
 <div class="post-layout">
 	<article class="post-article">
+		{%- if tocItems.length %}
 		<section class="mobile-toc" aria-label="Inhaltsübersicht">
 			<details class="toc" id="toc">
 				<summary class="toc-summary">
@@ -15,10 +20,15 @@ layout: layouts/base.njk
 					<span class="toc-label">Inhaltsübersicht</span>
 				</summary>
 				<nav class="toc-body" aria-label="Inhaltsübersicht Links">
-					<ol class="toc-list" id="toc-list"></ol>
+					<ol class="toc-list">
+						{%- for item in tocItems %}
+						<li class="toc-item toc-{{ item.level }}"><a href="{{ tocPageUrl }}#{{ item.id }}">{{ item.text | e }}</a></li>
+						{%- endfor %}
+					</ol>
 				</nav>
 			</details>
 		</section>
+		{%- endif %}
 
 		<header class="post-hero">
 			{%- if categoryLabel -%}
@@ -29,16 +39,23 @@ layout: layouts/base.njk
 
 			<ul class="post-metadata">
 				<li><time datetime="{{ page.date | htmlDateString }}">{{ page.date | readableDate }}</time></li>
-				{%- for tag in tags | filterTagList %}
-				{%- set tagUrl %}/tags/{{ tag | slugify }}/{% endset %}
-				<li><a href="{{ tagUrl }}" class="tag-pill">{{ tag }}</a></li>
-				{%- endfor %}
 			</ul>
 		</header>
 
 		<div class="post-content">
 			{{ content | safe }}
 		</div>
+
+		{%- if postTags.length %}
+		<footer class="post-tags" aria-label="Schlagwörter">
+			<ul class="post-metadata post-tags-list">
+				{%- for tag in postTags %}
+				{%- set tagUrl %}/tags/{{ tag | slugify }}/{% endset %}
+				<li><a href="{{ tagUrl }}" class="tag-pill">{{ tag }}</a></li>
+				{%- endfor %}
+			</ul>
+		</footer>
+		{%- endif %}
 
 {%- if collections.posts %}
 {%- set previousPost = collections.posts | getPreviousCollectionItem %}
@@ -54,14 +71,17 @@ layout: layouts/base.njk
 	</article>
 
 	<aside class="post-sidebar" aria-label="Sidebar">
-		<div class="sidebar-block">
-			<h2 class="sidebar-title">
-				<a class="sidebar-link" id="sidebar-h2-link" href="#">Überschrift 1</a>
-			</h2>
-			<p class="sidebar-subtitle">
-				<a class="sidebar-link sidebar-sublink" id="sidebar-h3-link" href="#">Überschrift 2</a>
-			</p>
-		</div>
+		{%- if tocItems.length %}
+		<nav class="sidebar-block sidebar-headings" aria-label="Inhaltsübersicht">
+			{%- for item in tocItems %}
+			{%- if item.level == "h2" %}
+			<p class="sidebar-title"><a class="sidebar-link" href="{{ tocPageUrl }}#{{ item.id }}">{{ item.text | e }}</a></p>
+			{%- else %}
+			<p class="sidebar-subtitle"><a class="sidebar-link sidebar-sublink" href="{{ tocPageUrl }}#{{ item.id }}">{{ item.text | e }}</a></p>
+			{%- endif %}
+			{%- endfor %}
+		</nav>
+		{%- endif %}
 
 		<div class="sidebar-block author-card">
 			<p class="author-name">{{ metadata.author.name }}</p>
@@ -80,7 +100,7 @@ layout: layouts/base.njk
 			{%- endif -%}
 
 			{%- if metadata.author.imageUrl -%}
-			<img class="author-image" src="{{ metadata.author.imageUrl }}" alt="" loading="lazy" decoding="async">
+			<img class="author-image" src="{{ metadata.author.imageUrl | url }}" alt="" width="874" height="823" loading="lazy" decoding="async" eleventy:ignore>
 			{%- else -%}
 			<div class="author-image-placeholder" aria-hidden="true"></div>
 			{%- endif -%}
@@ -88,64 +108,15 @@ layout: layouts/base.njk
 	</aside>
 </div>
 
+{%- if tocItems.length %}
 <script>
 	(() => {
-		const tocList = document.getElementById("toc-list");
-		const content = document.querySelector(".post-content");
-		if (!tocList || !content) return;
-
-		const headings = Array.from(content.querySelectorAll("h2, h3"));
-		if (!headings.length) {
-			const toc = document.getElementById("toc");
-			if (toc) toc.style.display = "none";
-			return;
-		}
-
-		for (const h of headings) {
-			if (!h.id) continue;
-			const li = document.createElement("li");
-			li.className = `toc-item toc-${h.tagName.toLowerCase()}`;
-			const a = document.createElement("a");
-			a.href = `#${h.id}`;
-			a.textContent = h.textContent || "";
-			li.appendChild(a);
-			tocList.appendChild(li);
-		}
-
-		const params = new URLSearchParams(window.location.search);
-		const shouldOpen = params.get("toc") === "open" || window.location.hash === "#toc";
-		if (shouldOpen) {
-			const toc = document.getElementById("toc");
-			if (toc) toc.open = true;
-		}
-
-		// Desktop sidebar mapping: Überschrift 1/2 -> first h2/h3 in content
-		const sidebarH2 = document.getElementById("sidebar-h2-link");
-		const sidebarH3 = document.getElementById("sidebar-h3-link");
-		if (sidebarH2) {
-			const firstH2 = headings.find(h => h.tagName.toLowerCase() === "h2");
-			if (firstH2) {
-				sidebarH2.textContent = firstH2.textContent || "";
-				sidebarH2.href = `#${firstH2.id}`;
-			} else {
-				sidebarH2.closest(".sidebar-title")?.style.setProperty("display", "none");
-			}
-		}
-		if (sidebarH3) {
-			const firstH3 = headings.find(h => h.tagName.toLowerCase() === "h3");
-			if (firstH3) {
-				sidebarH3.textContent = firstH3.textContent || "";
-				sidebarH3.href = `#${firstH3.id}`;
-			} else {
-				// fallback: second h2 if available
-				const h2s = headings.filter(h => h.tagName.toLowerCase() === "h2");
-				if (h2s.length > 1) {
-					sidebarH3.textContent = h2s[1].textContent || "";
-					sidebarH3.href = `#${h2s[1].id}`;
-				} else {
-					sidebarH3.closest(".sidebar-subtitle")?.style.setProperty("display", "none");
-				}
-			}
-		}
+		const toc = document.getElementById("toc");
+		if (!toc) return;
+		const open =
+			new URLSearchParams(window.location.search).get("toc") === "open" ||
+			window.location.hash === "#toc";
+		if (open) toc.setAttribute("open", "");
 	})();
 </script>
+{%- endif %}

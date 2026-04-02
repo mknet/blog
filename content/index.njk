@@ -8,16 +8,23 @@ const numberOfLatestPostsToShow = 3;
 ---
 {% set postsCount = collections.posts | length %}
 {% set latestPostsCount = postsCount | min(numberOfLatestPostsToShow) %}
-<h1>Latest {{ latestPostsCount }} Post{% if latestPostsCount != 1 %}s{% endif %}</h1>
 
-{% set postslist = collections.posts | head(-1 * numberOfLatestPostsToShow) %}
-{% set postslistCounter = postsCount %}
-{% include "postslist.njk" %}
+<header class="post-hero">
+	<p class="post-kicker">Blog</p>
+	<h1 class="post-title">{% if latestPostsCount == 1 %}Neuester Beitrag{% else %}Neueste Beiträge{% endif %}</h1>
+	<p class="home-lead">Die letzten {{ latestPostsCount }} {% if latestPostsCount == 1 %}Veröffentlichung{% else %}Veröffentlichungen{% endif %}.</p>
+</header>
 
-{% set morePosts = postsCount - numberOfLatestPostsToShow %}
-{% if morePosts > 0 %}
-<p>{{ morePosts }} more post{% if morePosts != 1 %}s{% endif %} can be found in <a href="blog.njk">the archive</a>.</p>
-{% endif %}
+<div class="post-content">
+	{% set postslist = collections.posts | head(-1 * numberOfLatestPostsToShow) %}
+	{% set postslistCounter = postsCount %}
+	{% include "postslist.njk" %}
+
+	{% set morePosts = postsCount - numberOfLatestPostsToShow %}
+	{% if morePosts > 0 %}
+	<p class="home-archive-teaser">{{ morePosts }} weitere{% if morePosts == 1 %}r Beitrag{% else %} Beiträge{% endif %} im <a href="/blog/">Archiv</a>.</p>
+	{% endif %}
+</div>
 
 {# List every content page in the project #}
 {#

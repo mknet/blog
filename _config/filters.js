@@ -1,4 +1,54 @@
 import { DateTime } from "luxon";
+import { decodeHTML } from "entities";
+import { parse } from "node-html-parser";
+
+/**
+ * Build TOC from post HTML. Layout runs before IdAttributePlugin, so headings often
+ * have no `id` yet — we assign the same slugs Eleventy will add (slugify + duplicates).
+ *
+ * @param {string} html
+ * @param {(s: string) => string} slugifyFn Eleventy `slugify` filter
+ * @returns {{ id: string, level: "h2"|"h3", text: string }[]}
+ */
+export function extractTocFromHtml(html, slugifyFn) {
+	if (!html || typeof html !== "string") return [];
+	const root = parse(html, { blockTextElements: { script: true, style: true, pre: true } });
+	/** @type {{ id: string, level: "h2"|"h3", text: string }[]} */
+	const out = [];
+	/** @type {Record<string, number>} */
+	const conflictCheck = {};
+
+	for (const el of root.querySelectorAll("h2, h3")) {
+		const tag = el.tagName.toLowerCase();
+		if (tag !== "h2" && tag !== "h3") continue;
+
+		const rawText = el.textContent.replace(/\s+/g, " ").trim();
+		if (!rawText) continue;
+		const text = decodeHTML(rawText);
+
+		let id = el.getAttribute("id") || "";
+		if (id) {
+			if (conflictCheck[id]) {
+				conflictCheck[id]++;
+				id = `${id}-${conflictCheck[id]}`;
+			} else {
+				conflictCheck[id] = 1;
+			}
+		} else {
+			const base = slugifyFn(text);
+			if (conflictCheck[base]) {
+				conflictCheck[base]++;
+				id = `${base}-${conflictCheck[base]}`;
+			} else {
+				conflictCheck[base] = 1;
+				id = base;
+			}
+		}
+
+		out.push({ id, level: /** @type {"h2"|"h3"} */ (tag), text });
+	}
+	return out;
+}
 
 export default function(eleventyConfig) {
 	eleventyConfig.addFilter("readableDate", (dateObj, format, zone) => {
@@ -40,4 +90,9 @@ export default function(eleventyConfig) {
 	eleventyConfig.addFilter("sortAlphabetically", strings =>
 		(strings || []).sort((b, a) => b.localeCompare(a))
 	);
+
+	eleventyConfig.addFilter("tocFromContent", (html) => {
+		const slugify = eleventyConfig.getFilter("slugify");
+		return extractTocFromHtml(html, slugify);
+	});
 };
